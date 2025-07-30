@@ -1,0 +1,3 @@
+[submodule "SharkPools-Extensions"]
+	path = SharkPools-Extensions
+	url = https://github.com/ZeroCatDev/SharkPools-Extensions

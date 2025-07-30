@@ -20,7 +20,9 @@ jobs:
     - name: Install dependencies
       run: npm install
     - name: Run SharkPools
-      run: npm run sharkpools
+      run: |
+        git submodule update --init --recursive
+        npm run sharkpools
       env:
         ZEROCAT_TOKEN_SHARKPOOL: ${{ secrets.ZEROCAT_TOKEN_SHARKPOOL }}
         ZEROCAT_BACKEND: ${{ vars.ZEROCAT_BACKEND }}

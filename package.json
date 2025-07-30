@@ -1,6 +1,6 @@
 {
   "name": "extension-mirror",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "Extension mirror tool for ZeroCat",
   "main": "mirror.js",

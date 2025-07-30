@@ -70,7 +70,7 @@ async function getExtensions() {
 // 检查项目是否存在
 async function checkProjectExists(extId) {
   try {
-    const response = await api.get(`/project/namespace/${config.username}/${extId}`);
+    const response = await api.get(`/project/namespace/${config.username}/40code-${extId}`);
     //console.log(response.data)
     return {
       exists: true,

@@ -5,9 +5,9 @@
   "description": "Extension mirror tool for ZeroCat",
   "main": "mirror.js",
   "scripts": {
-    "start": "node 40code-mirror.js && node SharkPools.js",
-    "40code": "node 40code-mirror.js",
-    "sharkpools": "node SharkPools.js"
+    "start": "node app.js",
+    "40code": "node app.js --40code",
+    "sharkpools": "node app.js --sharkpools"
   },
   "dependencies": {
     "axios": "^1.9.0",

@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import ZeroCatAPI from './components/zerocatApi.js';
+import ZeroCatAPI from '../../components/zerocatApi.js';
 
 /**
  * SharkPools扩展处理器
  */
-class SharkPoolsExtensionProcessor {
+class SharkPoolsProcessor {
   constructor(apiToken = process.env.ZEROCAT_TOKEN_SHARKPOOL, apiHost = process.env.ZEROCAT_BACKEND) {
     this.zerocatApi = new ZeroCatAPI(apiToken, apiHost);
     this.extensionsPath = path.join(process.cwd(), 'SharkPools-Extensions');
@@ -297,4 +297,4 @@ class SharkPoolsExtensionProcessor {
   }
 }
 
-export default SharkPoolsExtensionProcessor;
+export default SharkPoolsProcessor;

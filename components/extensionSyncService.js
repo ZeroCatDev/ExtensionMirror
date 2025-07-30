@@ -18,12 +18,12 @@ class ExtensionSyncService {
   }
 
   // 主同步函数
-  async syncExtension(extId, name, ext, forceMode = false) {
+  async syncExtension(extId, name, ext, forceMode = false, projectPrefix = '') {
     try {
       this.log(`开始同步扩展: ${extId} (${name})`);
 
       // 检查项目是否存在
-      const projectName = `40code-${extId}`;
+      const projectName = projectPrefix ? `${projectPrefix}-${extId}` : extId;
       const projectCheck = await this.zerocatApi.checkProjectExists(projectName);
 
       if (!projectCheck.exists) {
@@ -49,7 +49,7 @@ class ExtensionSyncService {
 
         const lastCommit = await this.zerocatApi.getLastCommit(projectCheck.projectId);
         const currentCode = await this.extensionFetcher.getExtensionCode(extId);
-        
+
         if (currentCode && lastCommit) {
           if (forceMode) {
             this.log(`强制模式：跳过差异比较，直接更新 ${extId}`, 'info');
@@ -84,22 +84,22 @@ class ExtensionSyncService {
     }
   }
 
-  // 批量同步扩展
-  async syncExtensions(targetExtensions, targetAuthors, forceMode = false) {
+    // 批量同步扩展
+  async syncExtensions(targetExtensions, targetAuthors, forceMode = false, projectPrefix = '') {
     try {
       // 获取扩展列表
       const extensions = await this.extensionFetcher.getExtensions();
 
       // 过滤目标扩展
       const targetExts = this.extensionFetcher.filterTargetExtensions(
-        extensions, 
-        targetExtensions, 
+        extensions,
+        targetExtensions,
         targetAuthors
       );
 
       // 同步每个扩展
       for (const ext of targetExts) {
-        await this.syncExtension(ext.extId, ext.name, ext, forceMode);
+        await this.syncExtension(ext.extId, ext.name, ext, forceMode, projectPrefix);
         // 添加延迟避免请求过快
         await new Promise(resolve => setTimeout(resolve, 1000));
       }

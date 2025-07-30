@@ -359,6 +359,7 @@ async function main() {
     }
 
     log('所有扩展同步完成!', 'success');
+    process.exit(0);
   } catch (error) {
     log(`程序执行失败: ${error.message}`, 'error');
     process.exit(1);

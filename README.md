@@ -34,8 +34,8 @@ cp env.example .env
 
 2. 编辑 `.env` 文件，设置你的配置：
 ```env
-token=your_api_token_here
-apihost=https://your-api-host.com
+ZEROCAT_TOKEN_40CODE=your_api_ZEROCAT_TOKEN_40CODE_here
+ZEROCAT_BACKEND=https://your-api-host.com
 ```
 
 ## 使用方法

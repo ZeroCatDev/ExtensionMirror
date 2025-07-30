@@ -26,8 +26,8 @@ dotenv.config();
 
 // 配置
 const config = {
-  token: process.env.token,
-  apiHost: process.env.apihost,
+  ZEROCAT_TOKEN_40CODE: process.env.ZEROCAT_TOKEN_40CODE,
+  apiHost: process.env.ZEROCAT_BACKEND,
   username: '40code',
   targetExtensions: [
   ],
@@ -42,7 +42,7 @@ const config = {
 const api = axios.create({
   baseURL: config.apiHost,
   headers: {
-    'Authorization': `Bearer ${config.token}`,
+    'Authorization': `Bearer ${config.ZEROCAT_TOKEN_40CODE}`,
     'Content-Type': 'application/json'
   }
 });
@@ -309,8 +309,8 @@ async function syncExtension(extId, name,ext) {
 async function main() {
   try {
     // 验证配置
-    if (!config.token || !config.apiHost) {
-      log('错误: 请设置环境变量 token 和 apihost', 'error');
+    if (!config.ZEROCAT_TOKEN_40CODE || !config.apiHost) {
+      log('错误: 请设置环境变量 ZEROCAT_TOKEN_40CODE 和 ZEROCAT_BACKEND', 'error');
       process.exit(1);
     }
 

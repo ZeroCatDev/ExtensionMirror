@@ -12,7 +12,9 @@ class SharkPoolsProcessor {
     this.extensionsPath = path.join(process.cwd(), 'SharkPools-Extensions');
     this.extensionCodePath = path.join(this.extensionsPath, 'extension-code');
     this.extensionThumbsPath = path.join(this.extensionsPath, 'extension-thumbs');
+    this.extensionKeysPath = path.join(this.extensionsPath, 'Gallery Files', 'Extension-Keys.json');
     this.processedFiles = new Map(); // 跟踪已处理的文件及其修改时间
+    this.extensionKeysData = null; // 缓存 Extension-Keys.json 数据
   }
 
   // 日志函数
@@ -260,6 +262,217 @@ class SharkPoolsProcessor {
       return successCount > 0;
     } catch (error) {
       this.log(`批量处理失败: ${error.message}`, 'error');
+      return false;
+    }
+  }
+
+  // 处理扩展管理器中的扩展（新增功能）
+  async processExtensionManager() {
+    try {
+      this.log('开始从扩展管理器获取扩展信息...');
+
+      // 获取所有扩展信息
+      const extensions = await this.zerocatApi.getMyExtensions();
+
+      if (!extensions || extensions.length === 0) {
+        this.log('没有找到扩展信息', 'error');
+        return false;
+      }
+
+      let processedCount = 0;
+      let skippedCount = 0;
+
+      for (const extension of extensions) {
+        try {
+          // 检查是否需要处理图片
+          if (!extension.image || extension.image.trim() === '') {
+            this.log(`扩展 ${extension.id} 缺少图片，开始处理...`);
+
+            const success = await this.processExtensionImage(extension);
+            if (success) {
+              processedCount++;
+            }
+          } else {
+            this.log(`扩展 ${extension.id} 已有图片，跳过处理`);
+            skippedCount++;
+          }
+        } catch (error) {
+          this.log(`处理扩展 ${extension.id} 失败: ${error.message}`, 'error');
+        }
+
+        // 添加延迟避免请求过快
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      this.log(`扩展管理器处理完成: 处理 ${processedCount} 个，跳过 ${skippedCount} 个`, 'success');
+      return processedCount > 0;
+    } catch (error) {
+      this.log(`扩展管理器处理失败: ${error.message}`, 'error');
+      return false;
+    }
+  }
+
+  // 加载 Extension-Keys.json 数据
+  loadExtensionKeysData() {
+    try {
+      if (this.extensionKeysData) {
+        return this.extensionKeysData; // 返回缓存数据
+      }
+
+      if (!fs.existsSync(this.extensionKeysPath)) {
+        this.log(`Extension-Keys.json 文件不存在: ${this.extensionKeysPath}`, 'error');
+        return null;
+      }
+
+      const data = fs.readFileSync(this.extensionKeysPath, 'utf-8');
+      this.extensionKeysData = JSON.parse(data);
+      this.log('Extension-Keys.json 数据加载成功');
+      return this.extensionKeysData;
+    } catch (error) {
+      this.log(`加载 Extension-Keys.json 失败: ${error.message}`, 'error');
+      return null;
+    }
+  }
+
+  // 根据项目名称查找扩展信息和对应的 banner SVG
+  findExtensionByFileName(fileName) {
+    try {
+      const keysData = this.loadExtensionKeysData();
+      if (!keysData || !keysData.extensions) {
+        this.log('Extension-Keys.json 数据无效', 'error');
+        return null;
+      }
+
+      // 遍历所有扩展，查找 URL 匹配 extension-code/{fileName}.js 的扩展
+      for (const [extensionName, extensionInfo] of Object.entries(keysData.extensions)) {
+        if (extensionInfo.url === `extension-code/${fileName}.js`) {
+          this.log(`找到匹配的扩展: ${extensionName} -> ${extensionInfo.banner}`);
+          return {
+            name: extensionName,
+            info: extensionInfo,
+            bannerPath: path.join(this.extensionsPath, extensionInfo.banner)
+          };
+        }
+      }
+
+      this.log(`未在 Extension-Keys.json 中找到文件名 ${fileName} 对应的扩展`, 'error');
+      return null;
+    } catch (error) {
+      this.log(`查找扩展失败: ${error.message}`, 'error');
+      return null;
+    }
+  }
+
+  // 根据项目ID查找对应的扩展文件名
+  findExtensionFileByProjectId(projectId) {
+    try {
+      if (!fs.existsSync(this.extensionCodePath)) {
+        this.log(`扩展代码目录不存在: ${this.extensionCodePath}`, 'error');
+        return null;
+      }
+
+      const files = fs.readdirSync(this.extensionCodePath)
+        .filter(file => file.endsWith('.js'));
+
+      for (const file of files) {
+        try {
+          const filePath = path.join(this.extensionCodePath, file);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const header = this.parseExtensionHeader(content);
+
+          if (header.id && header.id === projectId.toString()) {
+            const baseName = path.basename(file, '.js');
+            this.log(`找到匹配的扩展文件: ${file} (ID: ${header.id})`);
+            return baseName;
+          }
+        } catch (error) {
+          this.log(`读取文件失败 ${file}: ${error.message}`, 'error');
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.log(`查找扩展文件失败: ${error.message}`, 'error');
+      return null;
+    }
+  }
+
+  // 处理单个扩展的图片
+  async processExtensionImage(extension) {
+    try {
+      const projectId = extension.projectid;
+      const projectName = extension.project?.name || 'unknown';
+
+      this.log(`开始为扩展 ${extension.id} (项目: ${projectName}, 项目ID: ${projectId}) 处理图片`);
+
+      // 第一步：通过项目ID在extension-code文件中查找对应的// ID:，获得文件名
+      const extensionFileName = this.findExtensionFileByProjectId(projectName);
+
+      if (!extensionFileName) {
+        this.log(`在 extension-code 中未找到项目ID ${projectName} 对应的扩展文件，跳过处理`, 'error');
+        return false;
+      }
+
+      // 第二步：用这个文件名去Extension-Keys.json中查找对应的扩展信息
+      const extensionInfo = this.findExtensionByFileName(extensionFileName);
+
+      if (!extensionInfo) {
+        this.log(`在 Extension-Keys.json 中未找到文件名 ${extensionFileName} 对应的扩展信息，跳过处理`, 'error');
+        return false;
+      }
+
+      // 检查 banner SVG 文件是否存在
+      if (!fs.existsSync(extensionInfo.bannerPath)) {
+        this.log(`Banner SVG 文件不存在: ${extensionInfo.bannerPath}，跳过处理`, 'error');
+        return false;
+      }
+
+      // 生成临时 PNG 文件路径
+      const tempPngPath = path.join(this.extensionThumbsPath, `temp_${extensionFileName}.png`);
+
+      // 转换SVG为PNG
+      const convertedPng = await this.convertSvgToPng(extensionInfo.bannerPath, tempPngPath);
+      if (!convertedPng) {
+        this.log(`SVG转PNG失败: ${extensionInfo.name}`, 'error');
+        return false;
+      }
+
+      // 上传图片文件
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream(convertedPng), {
+        filename: `${extensionFileName}.png`,
+        contentType: 'image/png'
+      });
+
+      // 调用上传资产API
+      const uploadResult = await this.zerocatApi.uploadAsset(formData);
+
+      if (!uploadResult || !uploadResult.asset) {
+        this.log(`上传资产失败: ${extensionInfo.name}`, 'error');
+        return false;
+      }
+
+      // 构建图片文件名
+      const imageFileName = `${uploadResult.asset.md5}`;
+
+      // 更新扩展信息
+      const updateResult = await this.zerocatApi.updateExtension(extension.id, {
+        image: imageFileName
+      });
+
+      if (updateResult) {
+        this.log(`扩展 ${extension.id} 图片更新成功: ${imageFileName}`, 'success');
+      }
+
+      // 清理临时PNG文件
+      if (fs.existsSync(tempPngPath)) {
+        fs.unlinkSync(tempPngPath);
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`处理扩展图片失败 ${extension.id}: ${error.message}`, 'error');
       return false;
     }
   }

@@ -26,3 +26,8 @@ jobs:
       env:
         ZEROCAT_TOKEN_SHARKPOOL: ${{ secrets.ZEROCAT_TOKEN_SHARKPOOL }}
         ZEROCAT_BACKEND: ${{ vars.ZEROCAT_BACKEND }}
+    - name: Process Extension Manager
+      run: npm run extension-manager
+      env:
+        ZEROCAT_TOKEN_SHARKPOOL: ${{ secrets.ZEROCAT_TOKEN_SHARKPOOL }}
+        ZEROCAT_BACKEND: ${{ vars.ZEROCAT_BACKEND }}

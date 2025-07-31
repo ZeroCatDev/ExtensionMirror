@@ -43,7 +43,7 @@ class ZeroCatAPI {
 
       this.log('正在获取用户信息...');
       const response = await this.api.get('/user/me');
-      
+
       if (response.data.status === 'success') {
         this.config.userInfo = response.data.data;
         this.config.username = response.data.data.username;
@@ -71,7 +71,7 @@ class ZeroCatAPI {
     try {
       await this.ensureInitialized();
       const targetUsername = username || this.config.username;
-      
+
       const response = await this.api.get(`/project/namespace/${targetUsername}/${projectName}`);
       return {
         exists: true,
@@ -91,7 +91,7 @@ class ZeroCatAPI {
   async createProject(options = {}) {
     try {
       await this.ensureInitialized();
-      
+
       const {
         extId,
         name,
@@ -105,16 +105,16 @@ class ZeroCatAPI {
 
       // 构建项目名称
       const finalProjectName = projectName || `40code-${extId}`;
-      
+
       // 构建标题
       const finalTitle = title || `${name}(40code ${ext.author})`;
-      
+
       // 构建描述
-      const finalDescription = description || 
+      const finalDescription = description ||
         `从 40code 镜像的 ${name} 扩展\n原作者：40code [${ext.author}](https://www.40code.com/#page=user&id=${ext.author_id})\n\n${ext.description}`;
 
       this.log(`正在创建项目: ${finalProjectName}`);
-      
+
       const response = await this.api.post('/project', {
         name: finalProjectName,
         title: finalTitle,
@@ -254,8 +254,8 @@ class ZeroCatAPI {
   async uploadThumbnail(projectId, formData) {
     try {
       this.log(`正在上传作品封面: ${projectId}`);
-      
-      const response = await this.api.post(`/scratch/thumbnail/${projectId}`, formData, {
+
+      const response = await this.api.post(`/assets/upload`, formData, {
         headers: {
           ...formData.getHeaders()
         }
@@ -265,6 +265,68 @@ class ZeroCatAPI {
       return response.data;
     } catch (error) {
       this.log(`上传作品封面失败 ${projectId}: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  // 获取我的所有扩展信息
+  async getMyExtensions() {
+    try {
+      this.log('正在获取我的扩展信息...');
+      const response = await this.api.get('/extensions/manager/my');
+
+      if (response.data.status === 'success') {
+        this.log(`获取扩展信息成功，共 ${response.data.data.length} 个扩展`, 'success');
+        return response.data.data;
+      } else {
+        throw new Error(`获取扩展信息失败: ${response.data.message || '未知错误'}`);
+      }
+    } catch (error) {
+      this.log(`获取扩展信息失败: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  // 上传资产文件
+  async uploadAsset(formData) {
+    try {
+      this.log('正在上传资产文件...');
+
+      const response = await this.api.post('/assets/upload', formData, {
+        headers: {
+          ...formData.getHeaders()
+        }
+      });
+
+      if (response.data.status === 'success') {
+        this.log('资产文件上传成功', 'success');
+        return response.data;
+      } else {
+        console.log(response.data)
+        this.log(`上传资产文件失败: ${response.data.message || '未知错误'}`);
+        return response.data
+      }
+    } catch (error) {
+      this.log(`上传资产文件失败: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  // 更新扩展信息
+  async updateExtension(extensionId, updateData) {
+    try {
+      this.log(`正在更新扩展信息: ${extensionId}`);
+
+      const response = await this.api.put(`/extensions/manager/edit/${extensionId}`, updateData);
+
+      if (response.data.status === 'success') {
+        this.log(`扩展信息更新成功: ${extensionId}`, 'success');
+        return response.data;
+      } else {
+        throw new Error(`更新扩展信息失败: ${response.data.message || '未知错误'}`);
+      }
+    } catch (error) {
+      this.log(`更新扩展信息失败 ${extensionId}: ${error.message}`, 'error');
       throw error;
     }
   }

@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node app.js",
     "40code": "node app.js --40code",
-    "sharkpools": "node app.js --sharkpools"
+    "sharkpools": "node app.js --sharkpools",
+    "extension-manager": "node app.js --extension-manager"
   },
   "dependencies": {
     "axios": "^1.9.0",

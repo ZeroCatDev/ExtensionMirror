@@ -22,13 +22,15 @@ const args = process.argv.slice(2);
 const forceMode = args.includes('-f') || args.includes('--force');
 const sharkPoolsMode = args.includes('--sharkpools');
 const fortyCodeMode = args.includes('--40code');
+const extensionManagerMode = args.includes('--extension-manager');
 
 // 检查是否指定了模式
-if (!sharkPoolsMode && !fortyCodeMode) {
+if (!sharkPoolsMode && !fortyCodeMode && !extensionManagerMode) {
   console.log('❌ 错误: 请指定运行模式');
   console.log('使用方法:');
-  console.log('  - 40code模式: node app.js --40code');
+  console.log('  - 40code模式: node app.js --40code');  
   console.log('  - SharkPools模式: node app.js --sharkpools');
+  console.log('  - 扩展管理器模式: node app.js --extension-manager');
   console.log('  - 强制模式: 添加 -f 或 --force 参数');
   process.exit(1);
 }
@@ -102,6 +104,31 @@ async function main() {
 
       console.log('✅ 所有扩展同步完成!');
       process.exit(0);
+    } else if (extensionManagerMode) {
+      // 扩展管理器模式 - 处理已上传扩展的图片
+      console.log('ℹ️ 运行模式: 扩展管理器图片处理');
+
+      if (!process.env.ZEROCAT_TOKEN_SHARKPOOL) {
+        console.log('❌ 错误: 扩展管理器模式需要设置环境变量 ZEROCAT_TOKEN_SHARKPOOL');
+        process.exit(1);
+      }
+
+      const sharkPoolsProcessor = new SharkPoolsProcessor(
+        process.env.ZEROCAT_TOKEN_SHARKPOOL,
+        process.env.ZEROCAT_BACKEND
+      );
+
+      console.log('ℹ️ 开始处理扩展管理器中的扩展图片...');
+
+      const success = await sharkPoolsProcessor.processExtensionManager();
+
+      if (success) {
+        console.log('✅ 扩展管理器图片处理完成!');
+        process.exit(0);
+      } else {
+        console.log('❌ 扩展管理器图片处理失败');
+        process.exit(1);
+      }
     }
   } catch (error) {
     console.log(`❌ 程序执行失败: ${error.message}`);
